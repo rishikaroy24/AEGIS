@@ -151,6 +151,56 @@ def show_overview():
 def show_agent_playground():
     st.divider()
     st.subheader("Interactive Workflow Simulator")
+    
+    st.title("AI Agent Console")
+    st.caption(
+        "Ask the local Qwen2.5 agent to propose an action. "
+        "AEGIS independently validates every request."
+    )
+
+    prompt = st.text_area(
+        "Agent instruction",
+        placeholder="Example: Read ticket 105",
+        height=100,
+        key="llm_prompt"
+    )
+
+    if st.button(
+        "Execute with AEGIS",
+        type="primary",
+        use_container_width=True
+    ):
+        if not prompt.strip():
+            st.warning("Please enter an instruction.")
+        else:
+            try:
+                with st.spinner("Qwen is planning the action..."):
+                    response = requests.post(
+                        f"{API_URL}/llm/execute",
+                        json={"prompt": prompt},
+                        timeout=120
+                    )
+                    response.raise_for_status()
+                    result = response.json()
+
+                st.markdown("#### Agent Proposal")
+                st.json(result.get("proposal", {}))
+
+                st.markdown("#### Security Decision")
+
+                if result.get("allowed"):
+                    st.success("AEGIS APPROVED the action")
+                    st.markdown("#### Execution Result")
+                    st.json(result.get("result"))
+                else:
+                    st.error("AEGIS BLOCKED the action")
+                    st.write(
+                        result.get("reason", "Action denied")
+                    )
+
+            except requests.RequestException as error:
+                st.error(f"Agent execution failed: {error}")
+
 
     st.caption(
         "Test how AEGIS authorizes or blocks agent actions."
