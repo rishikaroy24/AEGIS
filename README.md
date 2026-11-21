@@ -1,68 +1,88 @@
-AEGIS - AI Agent Security Gateway
-Independent authorization for LLM agents.
 
-What AEGIS is and what does it do?
-AEGIS is a lightweight AI-agent security prototype designed to prevent
-language-model-generated actions from bypassing application security protocols. 
-Rather than allowing an LLM to execute tools directly, AEGIS places deterministic validation and authorisation checks between the model's proposed action and their execution. It acts as an additional layer between the user and the LLM agents. 
-This project includes a locally hosted LLM, a policy enforcement gateway, workflow level access controls, secured event logging and an interactive dashboard allowing users to experiment with different queries. 
+<div align="center">
 
-The Problem
+<img src="dashboard/assets/aegis-mark.png" alt="AEGIS shield logo" width="112">
 
-Large Language Models can misunderstand instructions, produce invalid tool calls, or propose actions that do not match a user's original request.
+# AEGIS
 
-An AI agent should not be trusted to determine its own authorization boundaries.
+### AI Agent Security Gateway
 
-AEGIS explores a practical solution: separating AI-based action planning from deterministic security enforcement.
+**Independent authorization for LLM-powered agents.**
 
-Key Features
+*Let AI propose. Let policy decide.*
 
-LLM-powered action planning: Qwen 2.5 (3B) interprets natural-language instructions into structured action proposals.
+![Python](https://img.shields.io/badge/Python-3.11%2B-801D32?style=flat-square)
+![FastAPI](https://img.shields.io/badge/Backend-FastAPI-DF6238?style=flat-square)
+![Streamlit](https://img.shields.io/badge/Dashboard-Streamlit-801D32?style=flat-square)
+![Qwen](https://img.shields.io/badge/LLM-Qwen%202.5%203B-C18A2D?style=flat-square)
+![Tests](https://img.shields.io/badge/Tests-19%20passed-28664D?style=flat-square)
 
-Strict proposal validation: Rejects unknown actions, invalid parameters, and malformed proposals.
+</div>
 
-Intent consistency checks: Verifies that proposed actions match the original user instruction.
+---
 
-Policy-based authorization: Restricts access to protected customer support tickets.
+## What is AEGIS?
 
-Workflow isolation: Prevents permissions established in one workflow from automatically transferring to another.
+**AEGIS** is a lightweight AI-agent security prototype designed to prevent actions proposed by a large language model (LLM) from bypassing application security policies.
 
-Recipient allowlisting: Restricts simulated outgoing emails to approved recipients.
+Instead of allowing an LLM to execute tools directly, AEGIS places **deterministic validation and authorization checks** between the model's proposal and the tool's execution. This independent security layer checks whether an action is structurally valid, consistent with the user's instruction, and permitted by the application's policies.
 
-Audit logging: Records supported authorization decisions and instrumented LLM proposal rejections.
+AEGIS combines a locally hosted LLM, a policy-enforcement gateway, workflow-level access controls, audit event logging, and an interactive dashboard for exploring allowed and blocked actions using synthetic customer-support tickets.
 
-Interactive dashboard: Provides real-time workflow demonstrations, ticket exploration, security analytics, and audit inspection.
+## Why build AEGIS?
+
+Language models can misinterpret instructions, generate malformed tool calls, or suggest an action that differs from what the user requested. They should **not be responsible for granting their own permissions**.
+
+AEGIS explores a clear separation of responsibilities:
+
+> **The LLM plans an action; deterministic application logic decides whether it is safe and authorized to execute.**
+
+## Key Features
+
+| Capability | What AEGIS does |
+|:--|:--|
+| **LLM action planning** | Qwen 2.5 (3B) converts supported natural-language requests into structured proposals. |
+| **Proposal validation** | Rejects malformed fields, invalid parameters, and unknown actions. |
+| **Intent consistency** | Checks that the proposed action, ticket ID, and recipient match an unambiguous user instruction. |
+| **Policy enforcement** | Restricts access to protected synthetic support tickets. |
+| **Workflow isolation** | Requires an authorized read in the same workflow before a ticket-summary email can be sent. |
+| **Recipient allowlisting** | Permits simulated email delivery only to configured addresses. |
+| **Audit events** | Logs gateway decisions and instrumented early LLM proposal rejections. |
+| **Interactive dashboard** | Offers security analytics, an agent playground, ticket browsing, and event inspection. |
 
 ## System Architecture
 
-<p align="center">
-  <img src="docs/architecture.svg" alt="AEGIS System Architecture" width="750">
-</p>
+<div align="center">
+
+<img src="docs/architecture.svg" alt="AEGIS system architecture: LLM planning, validation, policy gateway, execution and rejection logging" width="720">
+
+</div>
+
+The model **proposes** an operation. AEGIS validates its structure and intent before allowing the existing security gateway to evaluate execution. Invalid proposals and unauthorized operations are rejected; the instrumented paths record audit events.
 
 ## Technology Stack
 
 | Component | Technology | Purpose |
 |:---|:---|:---|
-| Programming Language | **Python** | Core application logic |
-| Language Model | **Qwen 2.5 (3B)** | Natural-language action planning |
-| LLM Runtime | **Ollama** | Local model inference |
+| Programming language | **Python** | Core application logic |
+| Language model | **Qwen 2.5 (3B)** | Natural-language action planning |
+| LLM runtime | **Ollama** | Local model inference |
 | Backend | **FastAPI** | API endpoints and security workflows |
 | Frontend | **Streamlit** | Interactive dashboard |
-| HTTP Client | **Requests** | API communication |
-| Testing | **pytest** | Automated security tests |
-| Version Control | **Git & GitHub** | Source control |
-
+| HTTP client | **Requests** | Communication between services |
+| Testing | **pytest** | Automated security and regression tests |
+| Version control | **Git & GitHub** | Source control and documentation |
 
 ## Installation & Local Setup
 
-AEGIS runs locally using Python, FastAPI, Streamlit, and Ollama.
+AEGIS is designed to run **locally** with Python, FastAPI, Streamlit, and Ollama.
 
 ### Prerequisites
 
-- Python 3.11 or later
+- Python 3.11 or later (the project was tested locally with Python 3.11)
 - Git
 - [Ollama](https://ollama.com/)
-- Approximately 2 GB of disk space for the Qwen 2.5 (3B) model, plus additional space for dependencies
+- Enough free disk space for the Qwen 2.5 (3B) model (approximately 1.9 GB in the tested local installation), plus Python dependencies
 
 ### 1. Clone the repository
 
@@ -71,17 +91,20 @@ git clone https://github.com/rishikaroy24/AEGIS.git
 cd AEGIS
 ```
 
-### 2. Create a virtual environment
+### 2. Create and activate a virtual environment
+
+**macOS / Linux:**
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-For Windows:
+**Windows (PowerShell):**
 
 ```powershell
-.venv\Scripts\activate
+py -m venv .venv
+.venv\Scripts\Activate.ps1
 ```
 
 ### 3. Install Python dependencies
@@ -90,156 +113,153 @@ For Windows:
 python -m pip install -r requirements.txt
 ```
 
-### 4. Set up the local language model
+### 4. Install and start the local LLM
 
-Install Ollama from [ollama.com](https://ollama.com/).
-
-Download Qwen 2.5 (3B):
+Install [Ollama](https://ollama.com/), ensure the Ollama service is running, and pull the model:
 
 ```bash
 ollama pull qwen2.5:3b
 ```
 
-Make sure Ollama is running before using the AI Agent Console.
+AEGIS's AI Agent Console expects the Ollama API at `http://127.0.0.1:11434`.
 
 ### 5. Start the FastAPI backend
 
-Open a terminal in the project root and run:
+In a terminal opened at the repository root, with the virtual environment active:
 
 ```bash
 uvicorn app.main:app --reload --port 8000
 ```
 
-The API will be available at:
-
-http://127.0.0.1:8000
-
-Interactive API documentation:
-
-http://127.0.0.1:8000/docs
+- API: http://127.0.0.1:8000
+- API documentation: http://127.0.0.1:8000/docs
 
 ### 6. Launch the Streamlit dashboard
 
-Open a second terminal, activate the virtual environment, and run:
+Open a **second terminal**, navigate to the repository root, and activate the virtual environment again. Then run:
 
 ```bash
 streamlit run dashboard/app.py
 ```
 
-Open the dashboard at:
-
-http://localhost:8501
+Visit http://localhost:8501 to explore the dashboard. Both FastAPI and Ollama must be running for the full AI-powered workflow.
 
 ### 7. Run security tests
+
+From the repository root:
 
 ```bash
 python -m pytest -v
 ```
 
-These tests verify supported authorization rules, workflow isolation, malformed proposal rejection, and intent-consistency validation.
+For a compact summary:
+
+```bash
+python -m pytest -q
+```
+
+### Test Results
+
+**19 automated tests passed** in the verified local environment (Python 3.11; `pytest -q`).
+
+| Test area | What is checked |
+|:--|:--|
+| Ticket authorization | Allowed and restricted ticket reads |
+| Workflow security | Read-before-send requirements and workflow isolation |
+| Email security | Unauthorized recipient blocking |
+| Proposal validation | Unknown actions, malformed fields, and invalid ticket IDs |
+| Intent validation | Unsupported requests, action substitutions, and parameter mismatches |
+
+> **Scope:** Passing tests demonstrate the implemented behaviours covered by the suite. They do not constitute a comprehensive penetration test or formal security certification.
 
 ### Important Notes
 
-- All customer support tickets are synthetic.
-- Email operations are simulated.
-- Logs and workflow state are stored in memory and may reset when FastAPI restarts.
-- AEGIS is a local security demonstration, not a production-certified security platform.
+- All customer-support records are **synthetic**.
+- Email actions are **simulated**.
+- Audit logs and workflow state are **in memory** and may reset when FastAPI restarts.
+- The dashboard's local API URL is configured for a local installation; the project is **not currently a hosted public service**.
 
-Security Demonstration
+## Security Demonstration: An Intent–Action Mismatch
 
-One of the key tests involved the instruction:
+One of the project's most instructive tests began with a user instruction:
 
-Delete customer ticket 105 permanently.
+> **Delete customer ticket 105 permanently.**
 
-During initial testing, the language model proposed read_ticket rather than identifying deletion as an unsupported operation.
+Initially, the LLM proposed `read_ticket` instead of recognizing deletion as unsupported. The ticket-read operation could pass ticket-access policy even though **it did not match what the user asked for**.
 
-Although reading ticket 105 was permitted by the existing access policy, executing that proposal did not match the original user instruction.
+AEGIS was subsequently strengthened with a deterministic intent-consistency check. On repeating the request, the substituted read was blocked **before execution**. Additional validation also rejected malformed `unsupported` proposals, and the rejection was visible in the audit trail.
 
-AEGIS was subsequently strengthened with an independent intent-consistency validator.
+**Lesson:** A valid-looking tool call is not automatically a faithful interpretation of the user's intent. Proposal validation, intent checks, and policy authorization serve different purposes.
 
-Result: The mismatched action was blocked before execution.
+## Interactive Dashboard
 
-Further testing verified authorized ticket reads, restricted ticket access, unauthorized email blocking, workflow isolation, and audit logging of rejected proposals.
+AEGIS includes four workspaces: **Overview**, **Agent Playground**, **Ticket Explorer**, and **Security Logs**. Its interface uses a royal Indian-inspired palette with maroon, sunset orange, antique gold, and interactive detailing.
 
-Interactive Dashboard
-## Dashboard Preview
+### Dashboard Preview
 
-### Security Overview
-![AEGIS Overview](docs/screenshots/01-overview.png)
+#### 1. Overview — Security Monitoring
 
-### Agent Playground — Blocked Request
-![AEGIS Blocked Action](docs/screenshots/02-agent-blocked.png)
+![AEGIS Overview dashboard](docs/screenshots/01-overview.png)
 
-### Agent Playground — Authorized Request
-![AEGIS Allowed Action](docs/screenshots/03-agent-allowed.png)
+Backend health, security metrics, a decision-balance chart, and recent activity.
 
-### Ticket Explorer
+#### 2. Agent Playground — Blocked Request
+
+![AEGIS blocking an unsupported agent request](docs/screenshots/02-agent-blocked.png)
+
+A natural-language request is evaluated and rejected when it violates validation or authorization rules.
+
+#### 3. Agent Playground — Authorized Request
+
+![AEGIS allowing an authorized ticket read](docs/screenshots/03-agent-allowed.png)
+
+Authorized actions can proceed through the gateway and return synthetic tool results.
+
+#### 4. Ticket Explorer
+
 ![AEGIS Ticket Explorer](docs/screenshots/04-ticket-explorer.png)
 
-### Security Logs
-![AEGIS Audit Logs](docs/screenshots/05-security-logs.png)
+Searchable support tickets, access filters, and policy-aware record details.
 
-The Streamlit interface includes four workspaces:
+#### 5. Security Logs
 
-Overview: Backend health, AI runtime information, security metrics, decision summaries, and recent events.
+![AEGIS Security Logs](docs/screenshots/05-security-logs.png)
 
-Agent Playground: Natural-language agent execution and a manual workflow simulator.
+Recorded decisions, reasons, workflow metadata, and log filtering.
 
-Ticket Explorer: Searchable synthetic customer support tickets with access-aware detail views.
+## Current Limitations
 
-Security Logs: Recorded authorization decisions, rejection reasons, and event filtering.
+AEGIS is a **local security demonstration**, not a production-ready or production-certified security platform.
 
-The interface uses a royal Indian-inspired visual design with maroon, sunset orange, antique gold, traditional typography, and interactive elements.
+- Intent matching is conservative and rule-based; it does not fully understand arbitrary natural-language instructions.
+- The supported action set is intentionally small.
+- In-memory logging and workflow state are not durable across restarts.
+- The current local architecture does not provide multi-user isolation or production authentication.
+- Email delivery and customer data are simulated.
+- Automated tests cover defined scenarios but not every possible adversarial input.
 
-Running Tests
+## Possible Extensions
 
-From the project root, after installing the required dependencies:
+- Persistent, tamper-evident audit events
+- More robust intent interpretation and adversarial evaluation
+- User authentication and role-based authorization
+- Isolated multi-user and multi-agent workflows
+- Extended tool and policy integrations
 
-python -m pytest tests/test_security.py -v
-python -m pytest -q
+---
 
-The tests cover authorization, workflow permissions, malformed proposals, and intent-validation scenarios.
+## Developed By
 
-Current Limitations
-
-AEGIS is a local research and demonstration prototype, not a production-certified security system.
-
-Intent validation uses conservative, rule-based natural-language matching.
-
-Only a small number of agent actions are supported.
-
-Security logs are stored in memory and reset when the backend restarts.
-
-Workflow state is maintained locally in memory.
-
-Email operations are simulated.
-
-Security test coverage does not constitute a formal security audit.
-
-Future Improvements
-
-Persistent and tamper-evident audit logging
-
-Stronger natural-language intent verification
-
-More comprehensive adversarial testing
-
-Multi-agent workflow authorization
-
-Role-based permissions and user authentication
-
-Expanded tool integrations and policy definitions
-
-Developed By
-
-Rishika Roy
-
+**Rishika Roy**  
 Computer Science Engineering Graduate
 
-Special interests: Artificial Intelligence, Machine Learning, Agentic Systems, and Secure AI Applications.
+Interests: Artificial Intelligence, Machine Learning, Agentic Systems, and Secure AI Applications.
 
-Contact: rishika24.roy@gmail.com
+**Email:** [rishika24.roy@gmail.com](mailto:rishika24.roy@gmail.com)  
+**GitHub:** [github.com/rishikaroy24](https://github.com/rishikaroy24)
 
-GitHub: github.com/rishikaroy24
+<div align="center">
 
-AEGIS — AI agents may propose actions. Independent security policies decide what gets executed.
+*AEGIS — AI agents may propose actions. Independent security policies decide what gets executed.*
+
+</div>
