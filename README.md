@@ -52,6 +52,99 @@ Interactive dashboard: Provides real-time workflow demonstrations, ticket explor
 | Testing | **pytest** | Automated security tests |
 | Version Control | **Git & GitHub** | Source control |
 
+
+## Installation & Local Setup
+
+AEGIS runs locally using Python, FastAPI, Streamlit, and Ollama.
+
+### Prerequisites
+
+- Python 3.11 or later
+- Git
+- [Ollama](https://ollama.com/)
+- Approximately 2 GB of disk space for the Qwen 2.5 (3B) model, plus additional space for dependencies
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/rishikaroy24/AEGIS.git
+cd AEGIS
+```
+
+### 2. Create a virtual environment
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+For Windows:
+
+```powershell
+.venv\Scripts\activate
+```
+
+### 3. Install Python dependencies
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+### 4. Set up the local language model
+
+Install Ollama from [ollama.com](https://ollama.com/).
+
+Download Qwen 2.5 (3B):
+
+```bash
+ollama pull qwen2.5:3b
+```
+
+Make sure Ollama is running before using the AI Agent Console.
+
+### 5. Start the FastAPI backend
+
+Open a terminal in the project root and run:
+
+```bash
+uvicorn app.main:app --reload --port 8000
+```
+
+The API will be available at:
+
+http://127.0.0.1:8000
+
+Interactive API documentation:
+
+http://127.0.0.1:8000/docs
+
+### 6. Launch the Streamlit dashboard
+
+Open a second terminal, activate the virtual environment, and run:
+
+```bash
+streamlit run dashboard/app.py
+```
+
+Open the dashboard at:
+
+http://localhost:8501
+
+### 7. Run security tests
+
+```bash
+python -m pytest -v
+```
+
+These tests verify supported authorization rules, workflow isolation, malformed proposal rejection, and intent-consistency validation.
+
+### Important Notes
+
+- All customer support tickets are synthetic.
+- Email operations are simulated.
+- Logs and workflow state are stored in memory and may reset when FastAPI restarts.
+- AEGIS is a local security demonstration, not a production-certified security platform.
+
 Security Demonstration
 
 One of the key tests involved the instruction:
