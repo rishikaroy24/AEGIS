@@ -148,166 +148,260 @@ def show_overview():
 # -----------------------------------------
 # Interactive Workflow Simulator
 # -----------------------------------------
+
 def show_agent_playground():
-    
-# Store workflow state across Streamlit reruns
+
+    # Initialize the workflow once per Streamlit session
     if "workflow_id" not in st.session_state:
         import uuid
         st.session_state.workflow_id = str(uuid.uuid4())
-    st.divider()
-    st.subheader("Interactive Workflow Simulator")
-    
-    st.title("AI Agent Console")
+
+    st.title("AEGIS Agent Playground")
     st.caption(
-        "Ask the local Qwen2.5 agent to propose an action. "
-        "AEGIS independently validates every request."
+        "Explore AI-powered actions and workflow-based "
+        "security enforcement."
     )
 
-    prompt = st.text_area(
-        "Agent instruction",
-        placeholder="Example: Read ticket 105",
-        height=100,
-        key="llm_prompt"
-    )
+    # Separate the two interfaces
+    tab1, tab2 = st.tabs([
+        "🤖 AI Agent Console",
+        "🔄 Workflow Simulator"
+    ])
 
-    if st.button(
-        "Execute with AEGIS",
-        type="primary",
-        use_container_width=True
-    ):
-        if not prompt.strip():
-            st.warning("Please enter an instruction.")
-        else:
-            try:
-                with st.spinner("Qwen is planning the action..."):
-                    response = requests.post(
-                        f"{API_URL}/llm/execute",
-                        json={
-                            "prompt": prompt,
-                            "workflow_id": st.session_state.workflow_id
-                        },
-                        timeout=120
+    # ==========================================
+    # TAB 1 — AI AGENT CONSOLE
+    # ==========================================
+
+    with tab1:
+
+        st.subheader("AI Agent Console")
+        st.caption(
+            "Ask Qwen2.5 to propose an action. "
+            "AEGIS independently validates and authorizes it."
+        )
+
+        st.info(
+            f"Current Workflow ID: "
+            f"{st.session_state.workflow_id}"
+        )
+
+        prompt = st.text_area(
+            "Agent instruction",
+            placeholder="Example: Read ticket 105",
+            height=100,
+            key="llm_prompt"
+        )
+
+        if st.button(
+            "Execute with AEGIS",
+            type="primary",
+            use_container_width=True
+        ):
+            if not prompt.strip():
+                st.warning("Please enter an instruction.")
+
+            else:
+                try:
+                    with st.spinner(
+                        "Qwen is planning the action..."
+                    ):
+                        response = requests.post(
+                            f"{API_URL}/llm/execute",
+                            json={
+                                "prompt": prompt,
+                                "workflow_id":
+                                    st.session_state.workflow_id
+                            },
+                            timeout=120
+                        )
+
+                        response.raise_for_status()
+                        result = response.json()
+
+                    st.markdown("#### Agent Proposal")
+                    st.json(result.get("proposal", {}))
+                    proposal = result.get("proposal") or {}
+
+                    action = proposal.get("action")
+                    ticket_id = proposal.get("ticket_id")
+                    recipient = proposal.get("recipient")
+
+                    st.markdown("#### Action Summary")
+
+                    col1, col2 = st.columns(2)
+
+                    with col1:
+                        st.metric(
+                            "Proposed Action",
+                            action.replace("_", " ").title()
+                            if isinstance(action, str) else "Unknown"
+                        )
+
+                    with col2:
+                        st.metric(
+                            "Ticket ID",
+                            str(ticket_id) if ticket_id is not None else "N/A"
+                        )
+
+                    if recipient:
+                        st.caption(f"Requested recipient: {recipient}")
+
+
+                    st.markdown("#### Security Decision")
+
+                    if result.get("allowed"):
+
+                        st.success("✅ AEGIS APPROVED the action")
+
+                        st.caption(
+                            "The proposed action passed the AEGIS "
+                            "security checks and was executed."
+                        )
+
+                        st.markdown("#### Execution Result")
+
+                        execution_result = result.get("result")
+
+                        if execution_result is not None:
+                            st.json(execution_result)
+                        else:
+                            st.info("No execution data returned.")
+
+                    else:
+
+                        st.error("🚫 AEGIS BLOCKED the action")
+
+                        reason = result.get("reason") or "Action denied"
+
+                        st.markdown(f"**Reason:** {reason}")
+
+                        st.caption(
+                            "The request was rejected. "
+                            "No unauthorized action was executed."
+                        )
+
+
+                except requests.RequestException as error:
+                    st.error(
+                        f"Agent execution failed: {error}"
                     )
 
-                    response.raise_for_status()
-                    result = response.json()
+    # ==========================================
+    # TAB 2 — WORKFLOW SIMULATOR
+    # ==========================================
 
-                st.markdown("#### Agent Proposal")
-                st.json(result.get("proposal", {}))
+    with tab2:
 
-                st.markdown("#### Security Decision")
+        st.subheader("Interactive Workflow Simulator")
+        st.caption(
+            "Manually test how AEGIS authorizes "
+            "or blocks agent actions."
+        )
 
-                if result.get("allowed"):
-                    st.success("AEGIS APPROVED the action")
-                    st.markdown("#### Execution Result")
-                    st.json(result.get("result"))
-                else:
-                    st.error("AEGIS BLOCKED the action")
+        st.info(
+            f"Workflow ID: "
+            f"{st.session_state.workflow_id}"
+        )
+
+        if st.button("Start New Workflow"):
+            import uuid
+            st.session_state.workflow_id = str(uuid.uuid4())
+            st.rerun()
+
+        ticket_id = st.selectbox(
+            "Select a customer ticket",
+            options=list(range(101, 116)),
+            format_func=lambda x: f"Ticket #{x}"
+        )
+
+        recipient = st.selectbox(
+            "Select email recipient",
+            options=[
+                "support@aegis.test",
+                "manager@aegis.test",
+                "external@example.com"
+            ]
+        )
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            read_button = st.button(
+                "Read Ticket",
+                use_container_width=True
+            )
+
+        with col2:
+            send_button = st.button(
+                "Send Email",
+                use_container_width=True
+            )
+
+        # Read ticket through FastAPI
+        if read_button:
+            try:
+                response = requests.post(
+                    f"{API_URL}/workflow/read",
+                    json={
+                        "workflow_id":
+                            st.session_state.workflow_id,
+                        "ticket_id": ticket_id
+                    },
+                    timeout=5
+                )
+
+                if response.status_code == 200:
+                    st.success("Ticket access ALLOWED")
+                    st.json(response.json())
+
+                elif response.status_code == 403:
+                    st.error("Ticket access BLOCKED")
                     st.write(
-                        result.get("reason", "Action denied")
+                        response.json().get("detail")
+                    )
+
+                else:
+                    st.warning(
+                        f"Unexpected response: "
+                        f"{response.status_code}"
                     )
 
             except requests.RequestException as error:
-                st.error(f"Agent execution failed: {error}")
+                st.error(f"Connection error: {error}")
 
+        # Send simulated email through FastAPI
+        if send_button:
+            try:
+                response = requests.post(
+                    f"{API_URL}/workflow/send",
+                    json={
+                        "workflow_id":
+                            st.session_state.workflow_id,
+                        "ticket_id": ticket_id,
+                        "recipient": recipient
+                    },
+                    timeout=5
+                )
 
-    st.caption(
-        "Test how AEGIS authorizes or blocks agent actions."
-    )
+                if response.status_code == 200:
+                    st.success("Email action ALLOWED")
+                    st.json(response.json())
 
+                elif response.status_code == 403:
+                    st.error("Email action BLOCKED")
+                    st.write(
+                        response.json().get("detail")
+                    )
 
+                else:
+                    st.warning(
+                        f"Unexpected response: "
+                        f"{response.status_code}"
+                    )
 
+            except requests.RequestException as error:
+                st.error(f"Connection error: {error}")
 
-    ticket_id = st.selectbox(
-        "Select a customer ticket",
-        options=list(range(101, 116)),
-        format_func=lambda x: f"Ticket #{x}"
-    )
-
-
-    recipient = st.selectbox(
-        "Select email recipient",
-        options=[
-            "support@aegis.test",
-            "manager@aegis.test",
-            "external@example.com"
-        ]
-    )
-
-    st.info(f"Workflow ID: {st.session_state.workflow_id}")
-
-    if st.button("Start New Workflow"):
-        import uuid
-
-        st.session_state.workflow_id = str(uuid.uuid4())
-        st.rerun()
-
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        read_button = st.button(
-            "Read Ticket",
-            use_container_width=True
-        )
-
-    with col2:
-        send_button = st.button(
-            "Send Email",
-            use_container_width=True
-        )
-
-    if read_button:
-        try:
-            response = requests.post(
-                f"{API_URL}/workflow/read",
-                json={
-                    "workflow_id": st.session_state.workflow_id,
-                    "ticket_id": ticket_id
-                },
-                timeout=5
-            )
-
-            if response.status_code == 200:
-                st.success("Ticket access ALLOWED")
-                st.json(response.json())
-
-            elif response.status_code == 403:
-                st.error("Ticket access BLOCKED")
-                st.write(response.json().get("detail"))
-
-            else:
-                st.warning(f"Unexpected response: {response.status_code}")
-
-        except requests.RequestException as error:
-            st.error(f"Connection error: {error}")
-
-    if send_button:
-        try:
-            response = requests.post(
-                f"{API_URL}/workflow/send",
-                json={
-                    "workflow_id": st.session_state.workflow_id,
-                    "ticket_id": ticket_id,
-                    "recipient": recipient
-                },
-                timeout=5
-            )
-
-            if response.status_code == 200:
-                st.success("Email action ALLOWED")
-                st.json(response.json())
-
-            elif response.status_code == 403:
-                st.error("Email action BLOCKED")
-                st.write(response.json().get("detail"))
-
-            else:
-                st.warning(f"Unexpected response: {response.status_code}")
-
-        except requests.RequestException as error:
-            st.error(f"Connection error: {error}")
-            
 
 def show_ticket_explorer():
     st.title("🎟️ Ticket Explorer")
@@ -498,29 +592,86 @@ def show_ticket_explorer():
 
 
 
+
 def show_security_logs():
-    st.subheader("Security Logs")
+
+    st.title("Security Logs")
+
+    st.caption(
+        "Monitor authorization decisions and "
+        "review security events recorded by AEGIS."
+    )
+
+    # Refresh the displayed security events
+    if st.button("Refresh Logs"):
+        st.rerun()
 
     try:
         response = requests.get(
             f"{API_URL}/logs",
             timeout=5
         )
+
         response.raise_for_status()
 
         events = response.json().get("events", [])
 
+        # Calculate security statistics
+        total_events = len(events)
+
+        allowed_events = sum(
+            event.get("decision") == "ALLOWED"
+            for event in events
+        )
+
+        blocked_events = sum(
+            event.get("decision") == "BLOCKED"
+            for event in events
+        )
+
+        # Display metrics
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            st.metric(
+                "Total Events",
+                total_events
+            )
+
+        with col2:
+            st.metric(
+                "Allowed Actions",
+                allowed_events
+            )
+
+        with col3:
+            st.metric(
+                "Blocked Actions",
+                blocked_events
+            )
+
+        st.divider()
+
+        st.subheader("Authorization History")
+
         if events:
+
             st.dataframe(
                 events[::-1],
                 use_container_width=True,
                 hide_index=True
             )
-        else:
-            st.info("No security events recorded.")
 
-    except requests.RequestException:
-        st.error("Unable to retrieve security logs.")
+        else:
+            st.info(
+                "No security events recorded yet. "
+                "Execute an agent action to generate logs."
+            )
+
+    except requests.RequestException as error:
+        st.error(
+            f"Unable to retrieve security logs: {error}"
+        )
 
 
 # -----------------------------------------
