@@ -33,70 +33,24 @@ Audit logging: Records supported authorization decisions and instrumented LLM pr
 
 Interactive dashboard: Provides real-time workflow demonstrations, ticket exploration, security analytics, and audit inspection.
 
-System Architecture
+## System Architecture
 
-User Instruction
-       |
-       v
-Qwen 2.5 (3B) — Ollama
-       |
-       v
-Structured Action Proposal
-       |
-       v
-Proposal Schema Validation
-       |
-       v
-Intent Consistency Validation
-       |
-       v
-AEGIS Policy Gateway
-       |
-       +---- REJECT ----> Audit Log
-       |
-       v
-Authorized Tool Execution
-       |
-       v
-Execution Result + Audit Log
+<p align="center">
+  <img src="docs/architecture.svg" alt="AEGIS System Architecture" width="750">
+</p>
 
-Technology Stack
+## Technology Stack
 
-Component
-
-Technology
-
-Programming language
-
-Python
-
-Language model
-
-Qwen 2.5 (3B)
-
-Local LLM runtime
-
-Ollama
-
-Backend API
-
-FastAPI
-
-Interactive frontend
-
-Streamlit
-
-HTTP communication
-
-Requests
-
-Automated testing
-
-pytest
-
-Version control
-
-Git & GitHub
+| Component | Technology | Purpose |
+|:---|:---|:---|
+| Programming Language | **Python** | Core application logic |
+| Language Model | **Qwen 2.5 (3B)** | Natural-language action planning |
+| LLM Runtime | **Ollama** | Local model inference |
+| Backend | **FastAPI** | API endpoints and security workflows |
+| Frontend | **Streamlit** | Interactive dashboard |
+| HTTP Client | **Requests** | API communication |
+| Testing | **pytest** | Automated security tests |
+| Version Control | **Git & GitHub** | Source control |
 
 Security Demonstration
 
