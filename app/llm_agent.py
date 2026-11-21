@@ -2,7 +2,7 @@
 import json
 import requests
 
-from app.security import secure_read_ticket
+from app.security import workflow_read, workflow_send
 
 
 OLLAMA_URL = "http://127.0.0.1:11434/api/chat"
@@ -125,12 +125,17 @@ def validate_agent_proposal(proposal):
     return False, "Invalid action"
 
 
-def execute_agent_request(user_request: str):
+
+def execute_agent_request(
+    user_request: str,
+    workflow_id: str
+):
     """
-    Plan, validate and execute an action
-    exclusively through the AEGIS security gateway.
+    Plan and validate an LLM action, then execute it
+    through the AEGIS workflow security gateway.
     """
 
+    # 1. Ask the LLM to propose an action
     try:
         proposal = plan_agent_action(user_request)
 
@@ -145,6 +150,7 @@ def execute_agent_request(user_request: str):
             "reason": f"LLM planning failed: {error}"
         }
 
+    # 2. Validate the proposal
     valid, validation_reason = validate_agent_proposal(
         proposal
     )
@@ -156,10 +162,12 @@ def execute_agent_request(user_request: str):
             "reason": validation_reason
         }
 
+    # 3. Extract the action parameters
     action = proposal["action"]
     ticket_id = proposal["ticket_id"]
+    recipient = proposal["recipient"]
 
-    # Unsupported actions are denied safely
+    # 4. Block unsupported actions
     if action == "unsupported":
         return {
             "proposal": proposal,
@@ -167,33 +175,33 @@ def execute_agent_request(user_request: str):
             "reason": "Requested action is unsupported"
         }
 
-    # Ticket access always passes through AEGIS
+    # 5. Read tickets through workflow security
     if action == "read_ticket":
+        result = workflow_read(
+            workflow_id,
+            ticket_id
+        )
 
-        result = secure_read_ticket(ticket_id)
+    # 6. Send simulated emails through workflow security
+    elif action == "send_email":
+        result = workflow_send(
+            workflow_id,
+            ticket_id,
+            recipient
+        )
 
-        return {
-            "proposal": proposal,
-            "allowed": result["allowed"],
-            "result": result.get("data"),
-            "reason": result.get("reason")
-        }
-
-    # Email execution remains blocked until
-    # the secure email gateway is integrated
-    if action == "send_email":
-
+    else:
         return {
             "proposal": proposal,
             "allowed": False,
-            "reason": (
-                "Email execution requires "
-                "the AEGIS secure email gateway"
-            )
+            "reason": "Unknown action"
         }
 
+    # 7. Return the security decision
     return {
         "proposal": proposal,
-        "allowed": False,
-        "reason": "Action denied"
+        "allowed": result["allowed"],
+        "result": result.get("data"),
+        "reason": result.get("reason")
     }
+

@@ -149,6 +149,11 @@ def show_overview():
 # Interactive Workflow Simulator
 # -----------------------------------------
 def show_agent_playground():
+    
+# Store workflow state across Streamlit reruns
+    if "workflow_id" not in st.session_state:
+        import uuid
+        st.session_state.workflow_id = str(uuid.uuid4())
     st.divider()
     st.subheader("Interactive Workflow Simulator")
     
@@ -177,9 +182,13 @@ def show_agent_playground():
                 with st.spinner("Qwen is planning the action..."):
                     response = requests.post(
                         f"{API_URL}/llm/execute",
-                        json={"prompt": prompt},
+                        json={
+                            "prompt": prompt,
+                            "workflow_id": st.session_state.workflow_id
+                        },
                         timeout=120
                     )
+
                     response.raise_for_status()
                     result = response.json()
 
@@ -206,10 +215,7 @@ def show_agent_playground():
         "Test how AEGIS authorizes or blocks agent actions."
     )
 
-    # Store workflow state across Streamlit reruns
-    if "workflow_id" not in st.session_state:
-        import uuid
-        st.session_state.workflow_id = str(uuid.uuid4())
+
 
 
     ticket_id = st.selectbox(

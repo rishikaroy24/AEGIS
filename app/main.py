@@ -169,12 +169,18 @@ def workflow_send_endpoint(request: WorkflowSendRequest):
 # LLM-powered Agent Endpoint
 # -----------------------------------------
 
+
 class AgentRequest(BaseModel):
     prompt: str
+    workflow_id: str
 
 
 @app.post("/llm/execute")
 def llm_execute_endpoint(request: AgentRequest):
     """Execute an LLM-proposed action through AEGIS."""
 
-    return execute_agent_request(request.prompt)
+    return execute_agent_request(
+        user_request=request.prompt,
+        workflow_id=request.workflow_id
+    )
+
