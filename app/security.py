@@ -12,6 +12,23 @@ ALLOWED_TICKETS = set(range(101, 111))
 # Stores security events while the server is running
 activity_logs = []
 
+def log_llm_rejection(
+    reason: str,
+    proposal: dict | None = None,
+    workflow_id: str | None = None
+):
+    """Record an LLM proposal rejected before gateway execution."""
+
+    proposal = proposal if isinstance(proposal, dict) else {}
+
+    activity_logs.append({
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "action": "llm_proposal_rejected",
+        "ticket_id": proposal.get("ticket_id"),
+        "decision": "BLOCKED",
+        "reason": reason,
+        "workflow_id": workflow_id
+    })
 
 # Track tickets accessed within each workflow
 workflow_history = {}
